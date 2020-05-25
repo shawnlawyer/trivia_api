@@ -24,12 +24,12 @@ cd backend
 
 python3 migrate.py db upgrade
 
-
 ```
 
 browse to http://localhost/
 
 ## Testing
+
 ```
 
 docker exec -it trivia_api_app_1 bash
@@ -37,7 +37,6 @@ docker exec -it trivia_api_app_1 bash
 cd backend
 
 python3 test.py
-
 
 ```
 
@@ -340,7 +339,7 @@ Example Response
 }
 ```
 
-#### GET /api/categories/<int:category_id>/questions
+#### POST /api/categories/<int:category_id>/questions
 
 Retrieve questions based on category
 

@@ -10,27 +10,32 @@ if [ ! -d 'logs' ]; then
 
 fi
 
+cd backend
+
 python3 migrate.py db upgrade
+
+cd  $HOME
 
 if [ "$ENVIRONMENT" = "DEV" ] ; then
 
     sudo cp $HOME/docker/nginx-dev.conf /etc/nginx/nginx.conf
-    screen -dmS APP bash -c 'flask run'
+    screen -dmS BACKEND bash -c 'flask run'
 
 else
 
     sudo cp $HOME/docker/nginx-uwsgi.conf /etc/nginx/nginx.conf
-    screen -dmS APP bash -c 'uwsgi uwsgi.ini'
+    screen -dmS BACKEND bash -c 'uwsgi uwsgi.ini'
 
 fi
-
-sudo nginx
 
 cd frontend
 
 npm install
-npm start
 
-cd ../
+screen -dmS FRONTEND bash -c 'npm start'
+
+cd $HOME
+
+sudo nginx
 
 tail -f logs/nginx/access.log -f logs/nginx/error.log

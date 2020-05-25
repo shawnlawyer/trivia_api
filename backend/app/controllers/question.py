@@ -21,68 +21,30 @@ class controller(object):
         try:
 
             if not kwargs:
+
                 values = request.get_json()
+
                 kwargs = {
-                    "question" : values.get('question',''),
-                    "answer" : values.get('answer',''),
-                    "category_id" : values.get('category', ''),
-                    "difficulty" : values.get('difficulty', '')
+                    "question" : values.get('question'),
+                    "answer" : values.get('answer'),
+                    "category_id" : int(values.get('category', 0)),
+                    "difficulty" : int(values.get('difficulty', 0))
                 }
 
             model = Question(**kwargs)
 
-            db.session.add(model)
-            db.session.commit()
+            model.insert()
 
             response = {
                 "success" : True,
                 "question" : model.format()
             }
 
-        except:
-
-            abort(422)
-
-        return jsonify(response)
-
-
-    @staticmethod
-    def edit_action(id, kwargs=None):
-        """Edit a Question record
-
-        :param id: record id
-        :param kwargs: dictionary to override request form values
-        :type id: int
-        :type kwargs: dict
-
-        """
-
-        try:
-
-            if not kwargs:
-
-                 kwargs = {
-                    "question" : request.form.get('question',''),
-                    "answer" : request.form.get('answer',''),
-                    "category" : request.form.get('category',''),
-                    "difficulty" : request.form.get('difficulty','')
-                }
-
-            model = Question.query.filter(Question.id == id).update(kwargs)
-
-            db.session.commit()
-
-            response = {
-                "success" : True,
-                "data" : model.format()
-            }
+            return jsonify(response)
 
         except:
 
             abort(422)
-
-        return jsonify(response)
-
 
     @staticmethod
     def delete_action(id):
@@ -93,23 +55,15 @@ class controller(object):
 
         """
 
-        try:
+        model = Question.query.filter(Question.id == id).first_or_404()
 
-            model = Question.query.filter(Question.id == id).one_or_none()
+        model.delete()
 
-            db.session.delete(model)
-            db.session.commit()
-
-            response = {
-                "success" : True
-            }
-
-        except:
-
-            abort(422)
+        response = {
+            "success" : True
+        }
 
         return jsonify(response)
-
 
     @staticmethod
     def list_json(page=None):
@@ -120,26 +74,36 @@ class controller(object):
 
         """
 
-        if not page:
+        try:
 
-            page = request.args.get('page', 1, type=int)
+            if not page:
 
-        models = Question.query.paginate(page=page, per_page=QUESTIONS_PER_PAGE)
+                page = request.args.get('page', 1, type=int)
 
-        results = {
-            "questions": [model.format() for model in models.items],
-            "total_questions": Question.query.count(),
-            "categories": [model.format() for model in Category.query.all()],
-            "current_category": Category.query.first().type
-        }
-        return jsonify(results)
+            models = Question.query.paginate(page=page, per_page=QUESTIONS_PER_PAGE)
 
+            if not models.items:
+
+                abort(404)
+
+            results = {
+                "questions": [model.format() for model in models.items],
+                "total_questions": Question.query.count(),
+                "categories": [model.format() for model in Category.query.all()],
+                "current_category": "ALL"
+            }
+
+            return jsonify(results)
+
+        except:
+
+            abort(422)
 
     @staticmethod
     def search_json(payload={}):
         """Returns json of a list of Question search records
 
-        :param search: search text
+        :param payload: payload dict
         :param page: page number
         :type search: str
         :type page: int
@@ -149,14 +113,19 @@ class controller(object):
         if not payload:
 
             payload = request.get_json()
+            page = payload.get('page', request.args.get('page', 1))
 
         search = payload.get('searchTerm', '')
 
-        page = payload.get('page', 1)
+        query = Question.query.filter(Question.question.ilike("%" + search + "%"))
 
-        count = Question.query.filter(Question.question.ilike("%" + search + "%")).count()
-        models = Question.query.filter(Question.question.ilike("%" + search + "%"))\
-            .paginate(page=page, per_page=QUESTIONS_PER_PAGE)
+        count = query.count()
+
+        models = query.paginate(page=page, per_page=QUESTIONS_PER_PAGE)
+
+        if not models.items:
+
+            abort(404)
 
         results = {
             "questions": [model.format() for model in models.items],
@@ -164,3 +133,4 @@ class controller(object):
         }
 
         return jsonify(results)
+

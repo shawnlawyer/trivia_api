@@ -340,7 +340,7 @@ Example Response
 }
 ```
 
-#### GET /api/categories/<int:category_id>/questions
+#### POST /api/categories/<int:category_id>/questions
 
 Retrieve questions based on category
 
